@@ -37,26 +37,16 @@ jobs:
       - name: Init React Native project (community CLI)
         run: |
           npx --yes @react-native-community/cli@latest init harzmeshtest --pm npm --skip-install --skip-git-init
-          if [ ! -f harzmeshtest/package.json ]; then
-            echo "FATAL: package.json not created"
-            ls -la harzmeshtest/ 2>/dev/null || echo "Directory not created"
-            exit 1
-          fi
-          echo "=== package.json exists ==="
-          head -30 harzmeshtest/package.json
+          ls -la harzmeshtest/package.json && echo "package.json exists OK"
         timeout-minutes: 15
 
-      - name: Fix deps and install mesh SDK
+      - name: Install dependencies and mesh SDK
         run: |
           cd harzmeshtest
-          # Patch any phantom typescript versions
-          sed -i 's/"typescript": "5\.[0-4]\.[0-9]"/"typescript": "5.5.4"/g' package.json
-          grep typescript package.json || echo "No typescript dep found"
-          # Install base deps
+          # Fix phantom typescript version if present
+          sed -i 's/"typescript": "5\.[0-9]\+\.[0-9]\+"/"typescript": "5.4.5"/g' package.json
           npm install --legacy-peer-deps
-          # Install mesh SDK
           npm install @offline-protocol/mesh-sdk@0.24.1 --legacy-peer-deps --force
-          echo "=== Install complete ==="
         timeout-minutes: 15
 
       - name: Copy App.tsx into project
@@ -66,17 +56,14 @@ jobs:
         run: |
           cd harzmeshtest/android/app/src/main
           sed -i '/<application/i             <uses-permission android:name="android.permission.BLUETOOTH" />            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />            <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />            <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />' AndroidManifest.xml
-          echo "=== AndroidManifest updated ==="
 
-      - name: Patch app/build.gradle for mesh SDK compatibility
+      - name: Patch app/build.gradle
         run: |
           cd harzmeshtest/android/app
-          sed -i 's/compileSdk 33/compileSdk 34/g' build.gradle
-          sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' build.gradle
+          sed -i 's/compileSdk [0-9]*/compileSdk 34/g' build.gradle
+          sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 34/g' build.gradle
           sed -i 's/minSdkVersion [0-9]*/minSdkVersion 24/g' build.gradle
           sed -i 's/minSdk [0-9]*/minSdk 24/g' build.gradle
-          echo "=== build.gradle patched ==="
-          grep -E 'compileSdk|minSdk' build.gradle
 
       - name: Build Debug APK
         run: |
