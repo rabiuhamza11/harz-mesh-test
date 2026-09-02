@@ -33,14 +33,15 @@ jobs:
           packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - name: Create React Native project
-        run: npx react-native@0.74.3 init harzmeshtest --pm npm --skip-git-ignore
+        run: npx react-native@0.74.3 init harzmeshtest --pm npm --skip-install
         timeout-minutes: 10
 
-      - name: Install mesh SDK
+      - name: Install dependencies and mesh SDK
         run: |
           cd harzmeshtest
+          npm install
           npm install @offline-protocol/mesh-sdk@0.24.1
-        timeout-minutes: 5
+        timeout-minutes: 15
 
       - name: Copy App.tsx into project
         run: cp App.tsx harzmeshtest/App.tsx
