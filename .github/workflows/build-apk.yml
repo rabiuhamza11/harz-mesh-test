@@ -35,31 +35,20 @@ jobs:
           packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - name: Create React Native project
-        run: npx --yes react-native@0.74.3 init harzmeshtest --pm npm --skip-install
-        timeout-minutes: 10
+        run: npx --yes react-native@0.74.3 init harzmeshtest --pm npm --skip-git-init
+        timeout-minutes: 20
 
-      - name: Fix typescript version and install dependencies
+      - name: Fix typescript version and install mesh SDK
         run: |
           cd harzmeshtest
-          python3 -c "
-          import json
-          with open('package.json') as f:
-              pkg = json.load(f)
-          # Fix: typescript 5.4.0 was never published, use 5.4.6
-          if 'devDependencies' in pkg and 'typescript' in pkg['devDependencies']:
-              old_ver = pkg['devDependencies']['typescript']
-              pkg['devDependencies']['typescript'] = '5.4.6'
-              print(f'Changed typescript from {old_ver} to 5.4.6 in devDependencies')
-          if 'overrides' in pkg and 'typescript' in pkg['overrides']:
-              del pkg['overrides']['typescript']
-              print('Removed typescript override')
-          with open('package.json', 'w') as f:
-              json.dump(pkg, f, indent=2)
-          print('package.json updated')
-          "
-          cat package.json | python3 -c "import json,sys; d=json.load(sys.stdin); print(f'typescript: {d.get("devDependencies",{}).get("typescript","N/A")}')"
+          # RN 0.74.3 template ships typescript@5.4.0 which was never published
+          # Patch it to 5.4.5 (closest real version) before installing
+          sed -i 's/"typescript": "5.4.0"/"typescript": "5.4.5"/g' package.json
+          echo "=== Patched typescript version ==="
+          grep typescript package.json || echo "No typescript dep found"
+          # Now install everything including the mesh SDK
           npm install --legacy-peer-deps
-          npm install @offline-protocol/mesh-sdk@0.24.1 --legacy-peer-deps
+          npm install @offline-protocol/mesh-sdk@0.24.1 --legacy-peer-deps --force
         timeout-minutes: 15
 
       - name: Copy App.tsx into project
