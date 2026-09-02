@@ -56,56 +56,27 @@ jobs:
           cd harzmeshtest/android/app/src/main
           sed -i '/<application/i             <uses-permission android:name="android.permission.BLUETOOTH" />            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />            <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />            <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />' AndroidManifest.xml
 
-      - name: Restrict ABI to arm64-v8a + armeabi-v7a (shrink APK for real phones)
+      - name: Restrict ABI via gradle.properties (real lever for RN 0.71+)
         run: |
-          cd harzmeshtest/android/app
-          python3 - <<'EOF'
-          import re
-          path = "build.gradle"
-          with open(path) as f:
-              content = f.read()
-          # Inject ndk abiFilters into defaultConfig block
-          pattern = r"(defaultConfig\s*\{)"
-          replacement = r"\1\n        ndk {\n            abiFilters 'armeabi-v7a', 'arm64-v8a'\n        }"
-          new_content, count = re.subn(pattern, replacement, content, count=1)
-          if count == 0:
-              print("WARNING: defaultConfig block not found, abiFilters not injected")
-          else:
-              with open(path, "w") as f:
-                  f.write(new_content)
-              print("Injected ABI filters into defaultConfig")
-          EOF
-
-      - name: Enable resource/code shrinking for debug build size
-        run: |
-          cd harzmeshtest/android/app
-          python3 - <<'EOF'
-          path = "build.gradle"
-          with open(path) as f:
-              content = f.read()
-          if "shrinkResources" not in content:
-              content = content.replace(
-                  "buildTypes {",
-                  "buildTypes {\n        debug {\n            shrinkResources false\n            minifyEnabled false\n        }",
-                  1
-              )
-              with open(path, "w") as f:
-                  f.write(content)
-              print("Patched buildTypes for debug")
-          else:
-              print("shrinkResources already present, skipping")
-          EOF
+          cd harzmeshtest/android
+          if grep -q "^reactNativeArchitectures=" gradle.properties; then
+            sed -i 's/^reactNativeArchitectures=.*/reactNativeArchitectures=armeabi-v7a,arm64-v8a/' gradle.properties
+          else
+            echo "reactNativeArchitectures=armeabi-v7a,arm64-v8a" >> gradle.properties
+          fi
+          echo "=== gradle.properties reactNativeArchitectures line ==="
+          grep reactNativeArchitectures gradle.properties
 
       - name: Debug - show generated build.gradle and settings.gradle
         run: |
           echo "=== app/build.gradle ==="
           cat harzmeshtest/android/app/build.gradle
           echo ""
+          echo "=== gradle.properties ==="
+          cat harzmeshtest/android/gradle.properties
+          echo ""
           echo "=== settings.gradle ==="
           cat harzmeshtest/android/settings.gradle
-          echo ""
-          echo "=== build.gradle (root) ==="
-          cat harzmeshtest/android/build.gradle
 
       - name: Build Debug APK
         run: |
