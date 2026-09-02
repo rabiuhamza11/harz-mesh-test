@@ -1,0 +1,29 @@
+<!-- Add these to android/app/src/main/AndroidManifest.xml -->
+<!-- Place inside <manifest> above <application> -->
+
+<!-- BLE permissions (required for all Android versions) -->
+<uses-permission android:name="android.permission.BLUETOOTH" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+
+<!-- Android 12+ granular BLE permissions -->
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN"
+    android:usesPermissionFlags="neverForLocation"
+    tools:targetApi="31" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT"
+    tools:targetApi="31" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE"
+    tools:targetApi="31" />
+
+<!-- Location permission (required for BLE scanning on all versions) -->
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+<!-- Declare BLE hardware requirement -->
+<uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+
+<!-- Foreground service (SDK uses this for background BLE) -->
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+
+<!-- NOTE: Add xmlns:tools="http://schemas.android.com/tools" to the
+     <manifest> tag if not already present -->
