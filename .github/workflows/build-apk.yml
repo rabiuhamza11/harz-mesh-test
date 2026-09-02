@@ -57,13 +57,30 @@ jobs:
           cd harzmeshtest/android/app/src/main
           sed -i '/<application/i             <uses-permission android:name="android.permission.BLUETOOTH" />            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />            <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />            <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />' AndroidManifest.xml
 
-      - name: Patch app/build.gradle
+      - name: Patch app/build.gradle safely
         run: |
           cd harzmeshtest/android/app
-          sed -i 's/compileSdk [0-9]*/compileSdk 34/g' build.gradle
-          sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 34/g' build.gradle
-          sed -i 's/minSdkVersion [0-9]*/minSdkVersion 24/g' build.gradle
-          sed -i 's/minSdk [0-9]*/minSdk 24/g' build.gradle
+          python3 << 'PYEOF'
+          import re
+          with open('build.gradle', 'r') as f:
+              content = f.read()
+          # Show original for debugging
+          print("=== ORIGINAL build.gradle (first 100 lines) ===")
+          for i, line in enumerate(content.split('\n')[:100], 1):
+              print(f"{i}: {line}")
+          # Patch compileSdk and minSdk safely - only match standalone numbers after the keywords
+          content = re.sub(r'compileSdk\s+\d+', 'compileSdk 34', content)
+          content = re.sub(r'compileSdkVersion\s+\d+', 'compileSdkVersion 34', content)
+          content = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 24', content)
+          content = re.sub(r'minSdk\s+\d+', 'minSdk 24', content)
+          content = re.sub(r'targetSdk\s+\d+', 'targetSdk 34', content)
+          content = re.sub(r'targetSdkVersion\s+\d+', 'targetSdkVersion 34', content)
+          with open('build.gradle', 'w') as f:
+              f.write(content)
+          print("=== PATCHED build.gradle ===")
+          for i, line in enumerate(content.split('\n')[:100], 1):
+              print(f"{i}: {line}")
+          PYEOF
 
       - name: Build Debug APK
         run: |
