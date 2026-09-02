@@ -34,27 +34,18 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
-      - name: Create React Native project (skip install)
-        run: |
-          npx --yes react-native@0.75.3 init harzmeshtest --pm npm --skip-git-init --skip-install
-          echo "=== Init exit code: $? ==="
-          ls -la harzmeshtest/ || echo "DIRECTORY NOT FOUND"
-          test -f harzmeshtest/package.json && echo "package.json EXISTS" || echo "package.json MISSING"
-        timeout-minutes: 20
+      - name: Create React Native project
+        run: npx --yes react-native@0.74.3 init harzmeshtest --pm npm --skip-install
+        timeout-minutes: 10
 
-      - name: Patch and install dependencies
+      - name: Fix typescript version and install dependencies
         run: |
           cd harzmeshtest
-          # Verify we have package.json
-          test -f package.json || { echo "FATAL: package.json not found, init failed"; exit 1; }
-          # Fix any phantom typescript versions
-          sed -i 's/"typescript": "5.[0-9]\.[0-9]"/"typescript": "5.5.4"/g' package.json
-          echo "=== package.json deps ==="
-          cat package.json | grep -E "typescript|react-native" || true
-          # Install dependencies
+          ls -la package.json
+          sed -i 's/"typescript": "5.4.0"/"typescript": "5.4.6"/' package.json
+          grep typescript package.json
           npm install --legacy-peer-deps
-          # Install mesh SDK
-          npm install @offline-protocol/mesh-sdk@0.24.1 --legacy-peer-deps --force
+          npm install @offline-protocol/mesh-sdk@0.24.1 --legacy-peer-deps
         timeout-minutes: 15
 
       - name: Copy App.tsx into project
@@ -63,24 +54,14 @@ jobs:
       - name: Add BLE permissions to AndroidManifest
         run: |
           cd harzmeshtest/android/app/src/main
-          sed -i '/<application/i \
-            <uses-permission android:name="android.permission.BLUETOOTH" />\
-            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\
-            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\
-            <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\
-            <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />\
-            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\
-            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\
-            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />\
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />' AndroidManifest.xml
+          sed -i '/<application/i             <uses-permission android:name="android.permission.BLUETOOTH" />            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />            <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />            <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />' AndroidManifest.xml
           echo "=== AndroidManifest updated ==="
 
       - name: Patch app/build.gradle for mesh SDK compatibility
         run: |
           cd harzmeshtest/android/app
-          sed -i 's/compileSdk [0-9]*/compileSdk 34/g' build.gradle
-          sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 34/g' build.gradle
+          sed -i 's/compileSdk 33/compileSdk 34/g' build.gradle
+          sed -i 's/compileSdkVersion 33/compileSdkVersion 34/g' build.gradle
           sed -i 's/minSdkVersion [0-9]*/minSdkVersion 24/g' build.gradle
           sed -i 's/minSdk [0-9]*/minSdk 24/g' build.gradle
           echo "=== build.gradle patched ==="
