@@ -16,3 +16,4 @@ The GitHub Actions workflow automatically builds a debug APK when you push to ma
 ## License
 SDK: AGPL-3.0 / Commercial (Offline Protocol, Inc.)
 Test harness: HARZ Digital Services
+
