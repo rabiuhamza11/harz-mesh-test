@@ -34,20 +34,27 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
-      - name: Init React Native 0.75.3 project (skip install)
+      - name: Install CocoaPods (required for RN template copy)
+        run: sudo gem install cocoapods --no-document
+        timeout-minutes: 5
+
+      - name: Init React Native project (latest)
         run: |
-          npx --yes react-native@0.75.3 init harzmeshtest --pm npm --skip-install --skip-git-init
-          echo "=== Init complete ==="
-          ls -la harzmeshtest/package.json || { echo "FATAL: package.json not created"; exit 1; }
+          npx --yes react-native@latest init harzmeshtest --pm npm --skip-install --skip-git-init
+          echo "=== Init exit code: $? ==="
+          echo "=== Checking project structure ==="
+          ls -la harzmeshtest/ || { echo "FATAL: harzmeshtest directory not created"; exit 1; }
+          ls -la harzmeshtest/package.json || { echo "FATAL: package.json not created"; find harzmeshtest -type f 2>/dev/null | head -20; exit 1; }
           echo "=== package.json exists ==="
-          cat harzmeshtest/package.json | head -30
+          head -30 harzmeshtest/package.json
         timeout-minutes: 15
 
       - name: Fix deps and install mesh SDK
         run: |
           cd harzmeshtest
           # Patch any phantom typescript versions (5.4.0 was never published)
-          sed -i 's/"typescript": "5\.4\.0"/"typescript": "5.4.5"/g' package.json
+          sed -i 's/"typescript": "5\.[0-4]\.[0-9]"/"typescript": "5.5.4"/g' package.json
+          grep typescript package.json || echo "No typescript dep found"
           # Install base deps
           npm install --legacy-peer-deps
           # Install mesh SDK
@@ -61,17 +68,7 @@ jobs:
       - name: Add BLE permissions to AndroidManifest
         run: |
           cd harzmeshtest/android/app/src/main
-          sed -i '/<application/i \
-            <uses-permission android:name="android.permission.BLUETOOTH" />\
-            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\
-            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\
-            <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\
-            <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />\
-            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\
-            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\
-            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />\
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />' AndroidManifest.xml
+          sed -i '/<application/i             <uses-permission android:name="android.permission.BLUETOOTH" />            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />            <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />            <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />' AndroidManifest.xml
           echo "=== AndroidManifest updated ==="
 
       - name: Patch app/build.gradle for mesh SDK compatibility
