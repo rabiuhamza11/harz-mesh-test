@@ -67,6 +67,32 @@ jobs:
           echo "=== gradle.properties reactNativeArchitectures line ==="
           grep reactNativeArchitectures gradle.properties
 
+      - name: Sign release build with debug keystore (standalone install, no Metro needed)
+        run: |
+          cd harzmeshtest/android/app
+          python3 - <<'EOF'
+          import re
+          path = "build.gradle"
+          with open(path) as f:
+              content = f.read()
+          # Point release signingConfig at the debug keystore so assembleRelease
+          # produces a directly-installable APK without extra signing steps.
+          if "signingConfig signingConfigs.debug" not in content.split("release {")[-1].split("}")[0] if "release {" in content else True:
+              content = re.sub(
+                  r"(release\s*\{)",
+                  r"\1\n            signingConfig signingConfigs.debug",
+                  content,
+                  count=1
+              )
+              with open(path, "w") as f:
+                  f.write(content)
+              print("Patched release buildType to use debug signingConfig")
+          else:
+              print("release already has a signingConfig, skipping")
+          EOF
+          echo "=== release block ==="
+          grep -A 5 "release {" build.gradle
+
       - name: Debug - show generated build.gradle and settings.gradle
         run: |
           echo "=== app/build.gradle ==="
@@ -78,11 +104,11 @@ jobs:
           echo "=== settings.gradle ==="
           cat harzmeshtest/android/settings.gradle
 
-      - name: Build Debug APK
+      - name: Build Release APK (bundles JS + Hermes, no Metro required)
         run: |
           cd harzmeshtest/android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon --stacktrace
         timeout-minutes: 25
 
       - name: Show APK sizes
@@ -96,8 +122,8 @@ jobs:
         with:
           name: harz-mesh-test-apk
           path: |
+            harzmeshtest/android/app/build/outputs/apk/release/app-release.apk
             harzmeshtest/android/app/build/outputs/apk/debug/app-debug.apk
-            harzmeshtest/android/app/build/outputs/apk/release/app-release-unsigned.apk
           retention-days: 30
           if-no-files-found: ignore
 
