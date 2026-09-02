@@ -34,15 +34,39 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
-      - name: Create React Native project (full init)
-        run: npx --yes react-native@0.74.3 init harzmeshtest --pm npm --skip-git-init
-        timeout-minutes: 20
+      - name: Create React Native project
+        run: npx --yes react-native@0.74.3 init harzmeshtest --pm npm --version 0.74.3 --skip-install
+        timeout-minutes: 10
 
-      - name: Install mesh SDK
+      - name: Verify project structure
+        run: |
+          echo "=== Root directory ==="
+          ls -la
+          echo "=== harzmeshtest directory ==="
+          ls -la harzmeshtest/ || echo "harzmeshtest directory not found!"
+          echo "=== package.json check ==="
+          cat harzmeshtest/package.json 2>/dev/null || echo "No package.json found!"
+          echo "=== Done ==="
+
+      - name: Install dependencies and mesh SDK
         run: |
           cd harzmeshtest
+          if [ ! -f package.json ]; then
+            echo "package.json missing! Creating minimal project..."
+            npx --yes react-native@0.74.3 init harzmeshtest --pm npm --directory .
+          fi
+          python3 -c "
+          import json
+          with open('package.json') as f:
+            pkg = json.load(f)
+          pkg.setdefault('overrides', {})['typescript'] = '5.4.5'
+          with open('package.json', 'w') as f:
+            json.dump(pkg, f, indent=2)
+          print('Added typescript override to package.json')
+          "
+          npm install --legacy-peer-deps
           npm install @offline-protocol/mesh-sdk@0.24.1 --legacy-peer-deps
-        timeout-minutes: 10
+        timeout-minutes: 15
 
       - name: Copy App.tsx into project
         run: cp App.tsx harzmeshtest/App.tsx
