@@ -1,0 +1,21 @@
+{
+  "name": "harz-mesh-test-harness",
+  "version": "2.1.0",
+  "description": "BLE P2P sovereignty test harness for HARZ Mesh",
+  "scripts": {
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "build:android": "cd android && ./gradlew assembleRelease",
+    "clean": "react-native clean"
+  },
+  "dependencies": {
+    "react": "18.2.0",
+    "react-native": "0.74.3",
+    "@offline-protocol/mesh-sdk": "0.24.1"
+  },
+  "devDependencies": {
+    "@types/react": "18.2.0",
+    "typescript": "5.4.0"
+  }
+}
