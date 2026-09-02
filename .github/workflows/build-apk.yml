@@ -43,7 +43,6 @@ jobs:
       - name: Install dependencies and mesh SDK
         run: |
           cd harzmeshtest
-          # Fix phantom typescript version if present
           sed -i 's/"typescript": "5\.[0-9]\+\.[0-9]\+"/"typescript": "5.4.5"/g' package.json
           npm install --legacy-peer-deps
           npm install @offline-protocol/mesh-sdk@0.24.1 --legacy-peer-deps --force
@@ -57,30 +56,16 @@ jobs:
           cd harzmeshtest/android/app/src/main
           sed -i '/<application/i             <uses-permission android:name="android.permission.BLUETOOTH" />            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />            <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />            <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />' AndroidManifest.xml
 
-      - name: Patch app/build.gradle safely
+      - name: Debug - show generated build.gradle and settings.gradle
         run: |
-          cd harzmeshtest/android/app
-          python3 << 'PYEOF'
-          import re
-          with open('build.gradle', 'r') as f:
-              content = f.read()
-          # Show original for debugging
-          print("=== ORIGINAL build.gradle (first 100 lines) ===")
-          for i, line in enumerate(content.split('\n')[:100], 1):
-              print(f"{i}: {line}")
-          # Patch compileSdk and minSdk safely - only match standalone numbers after the keywords
-          content = re.sub(r'compileSdk\s+\d+', 'compileSdk 34', content)
-          content = re.sub(r'compileSdkVersion\s+\d+', 'compileSdkVersion 34', content)
-          content = re.sub(r'minSdkVersion\s+\d+', 'minSdkVersion 24', content)
-          content = re.sub(r'minSdk\s+\d+', 'minSdk 24', content)
-          content = re.sub(r'targetSdk\s+\d+', 'targetSdk 34', content)
-          content = re.sub(r'targetSdkVersion\s+\d+', 'targetSdkVersion 34', content)
-          with open('build.gradle', 'w') as f:
-              f.write(content)
-          print("=== PATCHED build.gradle ===")
-          for i, line in enumerate(content.split('\n')[:100], 1):
-              print(f"{i}: {line}")
-          PYEOF
+          echo "=== app/build.gradle ==="
+          cat harzmeshtest/android/app/build.gradle
+          echo ""
+          echo "=== settings.gradle ==="
+          cat harzmeshtest/android/settings.gradle
+          echo ""
+          echo "=== build.gradle (root) ==="
+          cat harzmeshtest/android/build.gradle
 
       - name: Build Debug APK
         run: |
