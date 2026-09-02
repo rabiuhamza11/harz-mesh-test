@@ -18,10 +18,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 22
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -34,27 +34,25 @@ jobs:
         with:
           packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
-      - name: Init React Native project (skip install)
+      - name: Init React Native 0.75.3 project (skip install)
         run: |
-          npx --yes react-native@latest init harzmeshtest --pm npm --skip-install --skip-git-init
-          # Verify project was created
-          if [ ! -f harzmeshtest/package.json ]; then
-            echo "ERROR: package.json not created — init failed"
-            exit 1
-          fi
-          echo "=== package.json created ==="
-          cat harzmeshtest/package.json | head -20
-        timeout-minutes: 10
+          npx --yes react-native@0.75.3 init harzmeshtest --pm npm --skip-install --skip-git-init
+          echo "=== Init complete ==="
+          ls -la harzmeshtest/package.json || { echo "FATAL: package.json not created"; exit 1; }
+          echo "=== package.json exists ==="
+          cat harzmeshtest/package.json | head -30
+        timeout-minutes: 15
 
-      - name: Patch deps and install mesh SDK
+      - name: Fix deps and install mesh SDK
         run: |
           cd harzmeshtest
-          # Fix any phantom typescript versions
+          # Patch any phantom typescript versions (5.4.0 was never published)
           sed -i 's/"typescript": "5\.4\.0"/"typescript": "5.4.5"/g' package.json
-          # Install deps
+          # Install base deps
           npm install --legacy-peer-deps
           # Install mesh SDK
           npm install @offline-protocol/mesh-sdk@0.24.1 --legacy-peer-deps --force
+          echo "=== Install complete ==="
         timeout-minutes: 15
 
       - name: Copy App.tsx into project
@@ -63,7 +61,17 @@ jobs:
       - name: Add BLE permissions to AndroidManifest
         run: |
           cd harzmeshtest/android/app/src/main
-          sed -i '/<application/i             <uses-permission android:name="android.permission.BLUETOOTH" />            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />            <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />            <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />' AndroidManifest.xml
+          sed -i '/<application/i \
+            <uses-permission android:name="android.permission.BLUETOOTH" />\
+            <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />\
+            <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />\
+            <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />\
+            <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />\
+            <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />\
+            <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />\
+            <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />\
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />\
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />' AndroidManifest.xml
           echo "=== AndroidManifest updated ==="
 
       - name: Patch app/build.gradle for mesh SDK compatibility
