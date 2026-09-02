@@ -16,10 +16,10 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -33,15 +33,14 @@ jobs:
           packages: 'platform-tools platforms;android-34 build-tools;34.0.0'
 
       - name: Create React Native project
-        run: npx --yes react-native@0.75.4 init harzmeshtest --pm npm --skip-git-init --skip-install
+        run: npx react-native@latest init harzmeshtest --pm npm
         timeout-minutes: 10
 
-      - name: Install mesh SDK and dependencies
+      - name: Install mesh SDK
         run: |
           cd harzmeshtest
-          npm install
-          npm install @offline-protocol/mesh-sdk@0.24.1
-        timeout-minutes: 10
+          npm install @offline-protocol/mesh-sdk
+        timeout-minutes: 5
 
       - name: Copy App.tsx into project
         run: cp App.tsx harzmeshtest/App.tsx
